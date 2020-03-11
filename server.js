@@ -11,9 +11,12 @@ Build a command-line application that at a minimum allows the user to:
 
 const mysql = require("mysql");
 const inquirer = require("inquirer");
+//cosmike
+const figlet = require('figlet');
 require("dotenv").config();
 
 const Queries = require("./lib/database/queries");  
+const queries = new Queries();
 
 
 
@@ -28,13 +31,31 @@ var connection = mysql.createConnection({
   
 connection.connect(function(err) {
     if (err) throw err;
-    //console.log("connected as id " + connection.threadId + "\n");
+    console.log("connected as id " + connection.threadId + "\n");
     promptUser();
   });
 
+  const displayIntro = () => {
+    figlet.text('Employee Manager', {
+      font: '3-d',
+      horizontalLayout: 'default',
+      verticalLayout: 'default'
+  }, function(err, data) {
+      if (err) {
+          console.log('Something went wrong...');
+          console.dir(err);
+          return;
+      }
+      console.log("");
+      console.log(data);
+      return (data);
+    }) 
+  };
+  
+
 //this function will run the starting user prompt (what would you like to do) and execute the relevant function based on input
-  function promptUser() {
-    //displayIntro();
+  async function promptUser() {
+    const intro = await displayIntro();
     inquirer
     .prompt({
       name: "action",
@@ -73,11 +94,20 @@ connection.connect(function(err) {
 };
 
   function viewAllEmployees(sort) {
-    connection.query("SELECT e.id, e.first_name, e.last_name, r.title, r.salary, d.name as Department, e.manager_id FROM employee e INNER JOIN role r ON e.role_id = r.id INNER JOIN department d ON r.department_id = d.id", (err, res) => {
-      if (err) throw err;
-      console.table(res)
-    })     
+    switch (sort) {
+      case "name":
+        queries.getAllEmployees();
+        connection.query("SELECT e.id, e.first_name as First, e.last_name as Last, r.title as Title, r.salary as Salary, d.name as Department, e.manager_id FROM employee e INNER JOIN role r ON e.role_id = r.id INNER JOIN department d ON r.department_id = d.id", (err, res) => {
+          if (err) throw err;
+          console.table(res)
+        });
+        break;
+    
+      default:
+        break;
+    }
   };
+
 
   function viewAllDepartments() {
     inquirer
@@ -99,4 +129,4 @@ connection.connect(function(err) {
   }
   function viewAllRoles() {
       
-  }
+  };
