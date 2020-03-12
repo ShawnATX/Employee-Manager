@@ -3,7 +3,7 @@
 
 ## Description
 
-![Repo commit](https://github.com/ShawnATX/Employee-Manager)
+![Repo commit](https://img.shields.io/github/last-commit/ShawnATX/Employee-Manager)
 
 This Node CLI app can help a human resources team track, update, and remove employee data for any number of employees, roles, and departments. The application uses a MySQL database and prompts users for actions and input.
 
