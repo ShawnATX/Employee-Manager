@@ -5,7 +5,7 @@ USE human_resources_data;
 
 CREATE TABLE IF NOT EXISTS department (
 	id INT AUTO_INCREMENT NOT NULL
-    , name VARCHAR(30)
+    , name VARCHAR(50)
     , PRIMARY KEY (id)
 ); 
 
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS employee (
 	, last_name VARCHAR(30)
     , role_id INT NOT NULL
     , manager_id INT
-    , FOREIGN KEY (role_id) REFERENCES role(id),
+    , FOREIGN KEY (role_id) REFERENCES role(id)
     , FOREIGN KEY (manager_id) REFERENCES employee(id) 
     , PRIMARY KEY (id)
 ); 

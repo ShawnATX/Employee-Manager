@@ -35,8 +35,8 @@ connection.connect(function(err) {
     promptUser();
   });
 
-  const displayIntro = () => {
-    figlet.text('Employee Manager', {
+  const displayIntro = async () => {
+    await figlet.text('Employee Manager', {
       font: '3-d',
       horizontalLayout: 'default',
       verticalLayout: 'default'
@@ -55,33 +55,63 @@ connection.connect(function(err) {
 
 //this function will run the starting user prompt (what would you like to do) and execute the relevant function based on input
    const promptUser = async () =>{
-    displayIntro();
+    let introScreen = await displayIntro();
+    //console.log(introScreen);
     let timeToExit = false;
     try {
     while (timeToExit === false) {
       let action = await getAction();
       switch (action.action) {
         case "View all employees":
-          let view = await viewAllEmployees("name");
+          viewAllEmployees("name");
           break;
+
         case "View all employees by department":
           viewAllEmployees("department");          
           break;
-        case "Add Employee":
-          let newEmployee = await addEmployeePrompt();            
+
+        case "Add New Employee":
+          let newEmployee = await addEmployeePrompt();   
+          console.log('\n', newEmployee, '\n');        
           break;
-        case "Remove Employee":
-          
+
+          case "View all departments":
+            viewAllDepartments();
+           
           break;
+
+          case "View all roles":
+            let roles = await viewAllRoles();
+            console.log('\n');
+           
+          break;
+
         case "Update Employee":
           
+          break;
+          
+        case "Add New Department":
+          let newDepartment = await addDepartmentPrompt();
+          console.log('\n', newDepartment, '\n');        
+          break;
+          
+        case "Add New Role":
+          let newRole = await addRolePrompt();
+          console.log('\n', newRole, '\n');        
+          break;
+          
+        case "Remove Employee":
+          let employeeRemove = await removeEmployee();
+          console.log('\n', employeeRemove + " was removed.", '\n');        
           break;
           
         case "Exit":
           timeToExit = true;
           console.log("Be Well");
+          connection.end();
           process.exit(0);
           break;
+
         default:
           break;
       }
@@ -102,7 +132,11 @@ const getAction = async () => {
     choices: [
       "View all employees",
       "View all employees by department",
-      "Add Employee",
+      "View all departments",
+      "View all roles",
+      "Add New Employee",
+      "Add New Department",
+      "Add New Role",
       "Remove Employee",
       "Update Employee",
       "Exit"
@@ -130,7 +164,6 @@ const viewAllEmployees = async (sort) => {
             console.log("");
             console.table(res);
           });
-          return;
           break;
           
           default:
@@ -142,31 +175,63 @@ const viewAllEmployees = async (sort) => {
   }
 };
         
-        
+const viewAllDepartments = async () => {
+  try {
+    const departments = await connection.query("SELECT * FROM department", function(err, response) {
+      if (err) throw err;
+      console.log('\n');
+      console.table(response);
+      console.log('\n');
+    });
+    return departments;
+  }catch (err) {
+    console.log(err);
+  }
+};
+
+const viewAllRoles = async () => {
+    try {
+    const roles = await connection.query("SELECT * FROM role", function(err, response) {
+      if (err) throw err;
+      console.log('\n');
+      console.table(response);
+      console.log('\n');
+      connection.end()
+    });
+  }catch (err) {
+    console.log(err);
+  }
+}   
         
 const getRoles = () => {
+  let roles = [];
   connection.query("SELECT title, id FROM role", (err, res) => {
     if (err) throw err;
     //console.log(res);
     for (i in res) {
-      console.log(res[i].id);
+      //console.log(res[i]);
     }
-    const roles = res.map((el) => { el.id });
-    
-    console.log(roles);
-    return(res);
+    roles = res.filter((el) => (el));    
   })
+  console.log(roles);
 };
 
 const addEmployeePrompt = async () => {
-  try{
-    const employeeData = await
-    inquirer
-    .prompt([
-      {
-        name: "first",
-        type: "input",
-        message: "Please enter employee's first name"
+  connection.query("SELECT title, id FROM role", (err, result1) => {
+    if (err) throw err;
+    console.log(result1);
+    let roles = result1.map((el) => ` ${el.title} : ${el.id}`);
+    console.log(roles);
+    connection.query("SELECT first_name, last_name, id FROM employee", async (err, result2) => {
+      if (err) throw err;
+      let managers = result2.map((el) => `${el.first_name} ${el.last_name}`)
+      try{
+        inquirer
+        .prompt([
+          {
+          name: "first",
+          type: "input",
+          message: "Please enter employee's first name"
       },
       {
         name: "last",
@@ -177,22 +242,26 @@ const addEmployeePrompt = async () => {
         name: "role",
         type: "rawlist",
         message: "Please select the employee's role",
-        choices: ["1"]//getRoles()
+        choices: roles
       },
       {
         name: "manager",
         type: "rawlist",
         message: "Please select the employee's manager",
-        choices: ["1", "2"] //getManagers()
+        choices: managers
       }
-    ]
-  )
-  let dbResponse = await saveEmployee(employeeData);
-
-  return dbResponse;
-} catch (err){
-  console.log(err);
-}
+    ])
+    .then ( (answers) => {
+        console.log(answers)
+    })
+      //let dbResponse = saveEmployee(employeeData);
+      
+      //return dbResponse;
+    } catch (err){
+      console.log(err);
+    }
+  })
+  })
 };
 
 const saveEmployee = ({first, last, role, manager}) => {
@@ -200,8 +269,113 @@ const saveEmployee = ({first, last, role, manager}) => {
   let managerInt = parseInt(manager);
   connection.query("INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)", [first, last, roleInt, managerInt], function(err, response){
     if (err) throw err;
-    console.log(response);
-
   });
   return (`Employee ${first} ${last} saved`);
+};
+
+
+const addDepartmentPrompt = async () => {
+  try{
+    const departmentData = await
+    inquirer
+    .prompt([
+      {
+        name: "name",
+        type: "input",
+        message: "Please enter the new department name"
+      }
+    ]
+  )
+  let dbResponse = await saveDepartment(departmentData);
+
+  return dbResponse;
+} catch (err){
+  console.log(err);
+}
+};
+
+const saveDepartment = ({name}) => {
+  connection.query("INSERT INTO department (name) VALUES (?)", [name], function(err, response){
+    if (err) throw err;
+  });
+  return (`Department ${name} saved`);
+};
+
+
+const addRolePrompt = async () => {
+  try{
+    connection.query("SELECT * from department", async (err, results) => {
+      if (err) throw err;
+      let departments = results.map((department) => department.name );
+      const newRolePrompt = async () => {
+       await inquirer
+        .prompt([
+        {
+          name: "name",
+          type: "input",
+          message: "Please enter the new role name"
+        },
+        {
+          name: "salary",
+          type: "input",
+          message: "Please enter the salary for this role"
+          //validate: checkIfNum()
+        },
+        {
+          name: "department",
+          type: "rawlist",
+          message: "Please select the department to which this role belongs",
+          choices: departments
+        }
+      ]
+      ).then((newRole) => {
+          return newRole;
+     })    
+      //return dbResponse;
+    }
+      let newRole = await newRolePrompt();
+      console.log(newRole);
+
+    })
+    } catch (err){
+      console.log(err);
+    }
+  };
+
+const saveRole = ({name, salary, department}) => {
+  let salaryInt = parseInt(salary);
+  let departmentInt = parseInt(department);
+  connection.query("INSERT INTO role (name, salary, department_id) VALUES (?, ?, ?)", [name, salaryInt, departmentInt], function(err, response){
+    if (err) throw err;
+  });
+  return (`Department ${name} saved`);
+};
+
+const removeEmployee = () => {
+  connection.query("SELECT first_name, last_name, id FROM employee", (err, results) => {
+    if (err) throw err;
+    let employees = results.map((employee) => (employee.first_name + " " + employee.last_name));
+    inquirer.prompt([
+      {
+        type: "rawlist",
+        name: "employeeToRemove",
+        choices: employees
+      }])
+      .then(answer => {
+      console.log(answer);
+      let empId;
+      for (i in results) {
+        if ((results[i].first_name + " " + results[i].last_name) === employeeToRemove) {
+          empId = results[i].id;
+          console.log(empId);
+        }
+      }
+      connection.query("DELETE FROM employee WHERE id = ?", [empId], (err, response) => {
+        if (err) throw err;
+        console.log(response);
+      })
+    }).catch(error => {
+      console.log(error);
+    })
+  });
 };
