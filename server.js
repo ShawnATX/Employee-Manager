@@ -54,31 +54,21 @@ connection.connect(function(err) {
   
 
 //this function will run the starting user prompt (what would you like to do) and execute the relevant function based on input
-  async function promptUser() {
-    const intro = await displayIntro();
-    inquirer
-    .prompt({
-      name: "action",
-      type: "list",
-      message: "What would you like to do?",
-      choices: [
-        "View all employees",
-        "View all employees by department",
-        "Add Employee",
-        "Remove Employee",
-        "Update Employee"
-      ]
-    })
-    .then( (answer) => {
-      switch (answer.action) {
+   const promptUser = async () =>{
+    displayIntro();
+    let timeToExit = false;
+    try {
+    while (timeToExit === false) {
+      let action = await getAction();
+      switch (action.action) {
         case "View all employees":
-          viewAllEmployees("name");
+          let view = await viewAllEmployees("name");
           break;
         case "View all employees by department":
-          
+          viewAllEmployees("department");          
           break;
         case "Add Employee":
-          
+          let newEmployee = await addEmployeePrompt();            
           break;
         case "Remove Employee":
           
@@ -86,47 +76,132 @@ connection.connect(function(err) {
         case "Update Employee":
           
           break;
-      
+          
+        case "Exit":
+          timeToExit = true;
+          console.log("Be Well");
+          process.exit(0);
+          break;
         default:
           break;
       }
+    }
+
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+
+const getAction = async () => {
+  const action = await inquirer
+  .prompt({
+    name: "action",
+    type: "list",
+    message: "What would you like to do?",
+    choices: [
+      "View all employees",
+      "View all employees by department",
+      "Add Employee",
+      "Remove Employee",
+      "Update Employee",
+      "Exit"
+    ]
+  })
+  return action;
+};
+
+const viewAllEmployees = async (sort) => {
+  try{
+    switch (sort) {
+      case "name":
+        console.log("View employees");
+        //queries.getAllEmployees();
+        connection.query("SELECT e.id, e.first_name as First, e.last_name as Last, r.title as Title, r.salary as Salary, d.name as Department, e.manager_id FROM employee e INNER JOIN role r ON e.role_id = r.id INNER JOIN department d ON r.department_id = d.id", (err, res) => {
+          if (err) throw err;
+          console.log("");
+          console.table(res);
+        });
+        break;
+        case "department":
+          //queries.getAllEmployees();
+          connection.query("SELECT e.id, e.first_name as First, e.last_name as Last, r.title as Title, r.salary as Salary, d.name as Department, e.manager_id FROM employee e INNER JOIN role r ON e.role_id = r.id INNER JOIN department d ON r.department_id = d.id ORDER BY d.name ASC", (err, res) => {
+            if (err) throw err;
+            console.log("");
+            console.table(res);
+          });
+          return;
+          break;
+          
+          default:
+            break;
+          }
+  } 
+  catch (err) {
+    console.log(err);
+  }
+};
+        
+        
+        
+const getRoles = () => {
+  connection.query("SELECT title, id FROM role", (err, res) => {
+    if (err) throw err;
+    //console.log(res);
+    for (i in res) {
+      console.log(res[i].id);
+    }
+    const roles = res.map((el) => { el.id });
+    
+    console.log(roles);
+    return(res);
   })
 };
 
-  function viewAllEmployees(sort) {
-    switch (sort) {
-      case "name":
-        queries.getAllEmployees();
-        connection.query("SELECT e.id, e.first_name as First, e.last_name as Last, r.title as Title, r.salary as Salary, d.name as Department, e.manager_id FROM employee e INNER JOIN role r ON e.role_id = r.id INNER JOIN department d ON r.department_id = d.id", (err, res) => {
-          if (err) throw err;
-          console.table(res)
-        });
-        break;
-    
-      default:
-        break;
-    }
-  };
-
-
-  function viewAllDepartments() {
+const addEmployeePrompt = async () => {
+  try{
+    const employeeData = await
     inquirer
-    .prompt({
-      name: "artist",
-      type: "input",
-      message: "What artist would you like to search for?"
-    })
-    .then(function(answer) {
-      var query = "SELECT position, song, year FROM top5000 WHERE ?";
-      connection.query(query, { artist: answer.artist }, function(err, res) {
-        for (var i = 0; i < res.length; i++) {
-          console.log("Position: " + res[i].position + " || Song: " + res[i].song + " || Year: " + res[i].year);
-        }
-        runSearch();
-      });
-    });
-      
-  }
-  function viewAllRoles() {
-      
-  };
+    .prompt([
+      {
+        name: "first",
+        type: "input",
+        message: "Please enter employee's first name"
+      },
+      {
+        name: "last",
+        type: "input",
+        message: "Please enter employee's last name"
+      },
+      {
+        name: "role",
+        type: "rawlist",
+        message: "Please select the employee's role",
+        choices: ["1"]//getRoles()
+      },
+      {
+        name: "manager",
+        type: "rawlist",
+        message: "Please select the employee's manager",
+        choices: ["1", "2"] //getManagers()
+      }
+    ]
+  )
+  let dbResponse = await saveEmployee(employeeData);
+
+  return dbResponse;
+} catch (err){
+  console.log(err);
+}
+};
+
+const saveEmployee = ({first, last, role, manager}) => {
+  let roleInt = parseInt(role);
+  let managerInt = parseInt(manager);
+  connection.query("INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)", [first, last, roleInt, managerInt], function(err, response){
+    if (err) throw err;
+    console.log(response);
+
+  });
+  return (`Employee ${first} ${last} saved`);
+};
