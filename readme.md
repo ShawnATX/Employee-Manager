@@ -19,7 +19,7 @@ This Node CLI app can help a human resources team track, update, and remove empl
 
 ## Installation
 
-npm i in the root directory to install all dependencies. It will be necessary to save the localhost root MySQL user password in an .env file with the line `MY_PASS = <your password>.
+npm i in the root directory to install all dependencies. It will be necessary to save the localhost root MySQL user password in an .env file with the line `MY_PASS = <your password>.`
 
 ## Usage
 
