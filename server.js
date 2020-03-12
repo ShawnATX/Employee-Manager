@@ -60,7 +60,7 @@ connection.connect(function(err) {
     let timeToExit = false;
     try {
     while (timeToExit === false) {
-      let action = await getAction();
+      let action = getAction();
       switch (action.action) {
         case "View all employees":
           viewAllEmployees("name");
@@ -71,8 +71,7 @@ connection.connect(function(err) {
           break;
 
         case "Add New Employee":
-          let newEmployee = await addEmployeePrompt();   
-          console.log('\n', newEmployee, '\n');        
+          addEmployeePrompt();         
           break;
 
           case "View all departments":
@@ -123,8 +122,8 @@ connection.connect(function(err) {
 };
 
 
-const getAction = async () => {
-  const action = await inquirer
+const getAction = () => {
+  const action = inquirer
   .prompt({
     name: "action",
     type: "list",
@@ -204,25 +203,23 @@ const viewAllRoles = async () => {
 }   
         
 const getRoles = () => {
-  let roles = [];
   connection.query("SELECT title, id FROM role", (err, res) => {
     if (err) throw err;
-    //console.log(res);
     for (i in res) {
-      //console.log(res[i]);
     }
-    roles = res.filter((el) => (el));    
+    roles = res.filter((el) => (el));
+
   })
-  console.log(roles);
+  // console.log(roles); --> undefined
 };
 
-const addEmployeePrompt = async () => {
+const addEmployeePrompt = () => {
   connection.query("SELECT title, id FROM role", (err, result1) => {
     if (err) throw err;
     console.log(result1);
     let roles = result1.map((el) => ` ${el.title} : ${el.id}`);
     console.log(roles);
-    connection.query("SELECT first_name, last_name, id FROM employee", async (err, result2) => {
+    connection.query("SELECT first_name, last_name, id FROM employee", (err, result2) => {
       if (err) throw err;
       let managers = result2.map((el) => `${el.first_name} ${el.last_name}`)
       try{
@@ -254,9 +251,6 @@ const addEmployeePrompt = async () => {
     .then ( (answers) => {
         console.log(answers)
     })
-      //let dbResponse = saveEmployee(employeeData);
-      
-      //return dbResponse;
     } catch (err){
       console.log(err);
     }
@@ -307,8 +301,8 @@ const addRolePrompt = async () => {
     connection.query("SELECT * from department", async (err, results) => {
       if (err) throw err;
       let departments = results.map((department) => department.name );
-      const newRolePrompt = async () => {
-       await inquirer
+      const newRolePrompt = () => {
+       inquirer
         .prompt([
         {
           name: "name",
@@ -327,8 +321,8 @@ const addRolePrompt = async () => {
           message: "Please select the department to which this role belongs",
           choices: departments
         }
-      ]
-      ).then((newRole) => {
+      ])
+      .then((newRole) => {
           return newRole;
      })    
       //return dbResponse;
